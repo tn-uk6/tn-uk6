@@ -1,94 +1,162 @@
-const menuToggle = document.querySelector('.menu-toggle');
-const navMenu = document.querySelector('#primary-menu');
-const navLinks = document.querySelectorAll('.nav-link');
+const products = [
+  {
+    id: "urban-runner",
+    name: "Urban Runner",
+    price: 8900,
+    image: "images/urban-runner.jpg",
+    sizes: [40, 41, 42, 43, 44]
+  },
+  {
+    id: "street-flex",
+    name: "Street Flex",
+    price: 10500,
+    image: "images/street-flex.jpg",
+    sizes: [39, 40, 41, 42, 43]
+  },
+  {
+    id: "cloud-motion",
+    name: "Cloud Motion",
+    price: 12000,
+    image: "images/cloud-motion.jpg",
+    sizes: [40, 41, 42, 43, 44, 45]
+  },
+  {
+    id: "classic-edge",
+    name: "Classic Edge",
+    price: 9500,
+    image: "images/classic-edge.jpg",
+    sizes: [39, 40, 41, 42, 43, 44]
+  }
+];
 
-function closeMenu() {
-  if (!menuToggle || !navMenu) return;
-  menuToggle.setAttribute('aria-expanded', 'false');
-  menuToggle.setAttribute('aria-label', 'فتح القائمة');
-  navMenu.classList.remove('is-open');
-  document.body.classList.remove('menu-open');
+const productGrid = document.querySelector("#product-grid");
+const toast = document.querySelector("#toast");
+let toastTimeout;
+
+function formatPrice(price) {
+  return new Intl.NumberFormat("ar-DZ").format(price);
 }
 
-menuToggle?.addEventListener('click', () => {
-  const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-  menuToggle.setAttribute('aria-expanded', String(!isExpanded));
-  menuToggle.setAttribute('aria-label', isExpanded ? 'فتح القائمة' : 'إغلاق القائمة');
-  navMenu?.classList.toggle('is-open', !isExpanded);
-  document.body.classList.toggle('menu-open', !isExpanded);
-});
+function createProductCard(product, index) {
+  const card = document.createElement("article");
+  card.className = "product-card";
+  card.dataset.productId = product.id;
 
-navLinks.forEach((link) => link.addEventListener('click', closeMenu));
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeMenu();
-});
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 680) closeMenu();
-});
+  const image = document.createElement("div");
+  image.className = "product-image";
+  image.innerHTML = `
+    <span class="product-number">0${index + 1}</span>
+    <span class="product-placeholder" aria-hidden="true">👟</span>
+    <img src="${product.image}" alt="${product.name}" loading="lazy">
+    <span class="product-label">TN_UK / SPORT</span>
+  `;
+  const img = image.querySelector("img");
+  img.addEventListener("error", () => image.classList.add("image-unavailable"), { once: true });
 
-const revealElements = document.querySelectorAll('.reveal');
-if ('IntersectionObserver' in window) {
-  const revealObserver = new IntersectionObserver((entries, observer) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.12 });
-  revealElements.forEach((element) => revealObserver.observe(element));
-} else {
-  revealElements.forEach((element) => element.classList.add('is-visible'));
-}
+  const info = document.createElement("div");
+  info.className = "product-info";
+  const titleRow = document.createElement("div");
+  titleRow.className = "product-title-row";
+  const title = document.createElement("h3");
+  title.className = "product-title";
+  title.textContent = product.name;
+  const price = document.createElement("span");
+  price.className = "product-price";
+  price.innerHTML = `${formatPrice(product.price)} <span class="price-currency">دج</span>`;
+  titleRow.append(title, price);
 
-const filterButtons = document.querySelectorAll('.filter-button');
-const portfolioCards = document.querySelectorAll('.portfolio-card');
-filterButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const filter = button.dataset.filter;
-    filterButtons.forEach((item) => {
-      const selected = item === button;
-      item.classList.toggle('active', selected);
-      item.setAttribute('aria-pressed', String(selected));
-    });
-    portfolioCards.forEach((card) => {
-      card.classList.toggle('is-hidden', filter !== 'all' && card.dataset.category !== filter);
-    });
-  });
-  button.setAttribute('aria-pressed', String(button.classList.contains('active')));
-});
+  const sizeLabel = document.createElement("p");
+  sizeLabel.className = "size-label";
+  sizeLabel.textContent = "اختر المقاس";
+  const sizes = document.createElement("div");
+  sizes.className = "sizes";
+  sizes.setAttribute("role", "group");
+  sizes.setAttribute("aria-label", `مقاسات ${product.name}`);
 
-const contactForm = document.querySelector('#contact-form');
-contactForm?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  if (!contactForm.reportValidity()) return;
-
-  const formData = new FormData(contactForm);
-  const name = formData.get('name')?.toString().trim();
-  const service = formData.get('service')?.toString();
-  const message = formData.get('message')?.toString().trim();
-  const text = [
-    `مرحباً، أنا ${name}.`,
-    `أرغب في الاستفسار عن: ${service}.`,
-    message ? `تفاصيل إضافية: ${message}` : ''
-  ].filter(Boolean).join('\n');
-
-  window.open(`https://wa.me/213772036414?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
-});
-
-const sections = document.querySelectorAll('main section[id]');
-if ('IntersectionObserver' in window) {
-  const sectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      navLinks.forEach((link) => {
-        const active = link.getAttribute('href') === `#${entry.target.id}`;
-        link.classList.toggle('active', active);
+  product.sizes.forEach((size) => {
+    const button = document.createElement("button");
+    button.className = "size-button";
+    button.type = "button";
+    button.textContent = size;
+    button.setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-label", `مقاس ${size}`);
+    button.addEventListener("click", () => {
+      sizes.querySelectorAll(".size-button").forEach((sizeButton) => {
+        sizeButton.setAttribute("aria-pressed", String(sizeButton === button));
       });
+      card.dataset.selectedSize = size;
     });
-  }, { rootMargin: '-35% 0px -55% 0px' });
-  sections.forEach((section) => sectionObserver.observe(section));
+    sizes.append(button);
+  });
+
+  const orderButton = document.createElement("button");
+  orderButton.className = "order-button";
+  orderButton.type = "button";
+  orderButton.textContent = "اطلب الآن عبر إنستغرام";
+  orderButton.addEventListener("click", () => placeOrder(product, card));
+
+  info.append(titleRow, sizeLabel, sizes, orderButton);
+  card.append(image, info);
+  return card;
 }
 
-const year = document.querySelector('#current-year');
-if (year) year.textContent = new Date().getFullYear();
+function showToast(message, isError = false) {
+  window.clearTimeout(toastTimeout);
+  toast.textContent = message;
+  toast.classList.toggle("is-error", isError);
+  toast.classList.add("is-visible");
+  toastTimeout = window.setTimeout(() => toast.classList.remove("is-visible"), 4500);
+}
+
+async function copyMessage(message) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(message);
+      return true;
+    } catch (error) {
+      console.warn("Clipboard API rejected the copy request; trying the fallback.", error);
+    }
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = message;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.append(textArea);
+  textArea.select();
+  const copied = document.execCommand("copy");
+  textArea.remove();
+  return copied;
+}
+
+async function placeOrder(product, card) {
+  const selectedSize = card.dataset.selectedSize;
+  if (!selectedSize) {
+    showToast("من فضلك اختر المقاس أولاً.", true);
+    card.querySelector(".sizes").scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
+  const message = `السلام عليكم، أريد طلب الحذاء: ${product.name}\nالمقاس: ${selectedSize}\nالسعر: ${formatPrice(product.price)} دج`;
+  const copyResult = copyMessage(message);
+  window.open("https://ig.me/m/tn_uk", "_blank", "noopener,noreferrer");
+
+  try {
+    const copied = await copyResult;
+    if (copied) {
+      showToast("تم نسخ رسالة الطلب! الصقها في محادثة إنستغرام لإتمام طلبك.");
+    } else {
+      showToast(`تعذّر النسخ تلقائياً. انسخ رسالتك والصقها في إنستغرام: ${message}`, true);
+    }
+  } catch (error) {
+    console.error("Could not copy the Instagram order message.", error);
+    showToast(`تعذّر النسخ تلقائياً. انسخ رسالتك والصقها في إنستغرام: ${message}`, true);
+  }
+}
+
+products.forEach((product, index) => {
+  productGrid.append(createProductCard(product, index));
+});
+
+document.querySelector("#current-year").textContent = new Date().getFullYear();
